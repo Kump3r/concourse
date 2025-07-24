@@ -99,9 +99,7 @@ planAndResourcesFetched :
 planAndResourcesFetched buildId ( plan, resources ) model =
     let
         url =
-            Endpoints.BuildEventStream
-                |> Endpoints.Build buildId
-                |> Endpoints.toString []
+            Endpoints.toString (Endpoints.Build buildId Endpoints.BuildEventStream) []
     in
     ( { model
         | steps =

@@ -122,6 +122,8 @@ const (
 
 	GetOpenIDConfiguration = "GetOpenIDConfiguration"
 	GetSigningKeys         = "GetSigningKeys"
+
+	GetMaintenanceBanner = "GetMaintenanceBanner"
 )
 
 const (
@@ -251,4 +253,5 @@ var Routes = rata.Routes([]rata.Route{
 
 	{Path: "/.well-known/openid-configuration", Method: "GET", Name: GetOpenIDConfiguration},
 	{Path: "/.well-known/jwks.json", Method: "GET", Name: GetSigningKeys},
+	{Path: "/api/v1/maintenance-banner", Method: "GET", Name: GetMaintenanceBanner},
 })

@@ -540,11 +540,7 @@ handleDelivery delivery ( model, effects ) =
                 |> Maybe.map
                     (List.filter
                         (.url
-                            >> String.endsWith
-                                (Endpoints.BuildEventStream
-                                    |> Endpoints.Build model.id
-                                    |> Endpoints.toString []
-                                )
+                            >> String.endsWith (Endpoints.toString (Endpoints.Build model.id Endpoints.BuildEventStream) [])
                         )
                     )
                 |> Maybe.map

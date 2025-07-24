@@ -206,6 +206,7 @@ type Effect
     | LoadFavoritedPipelines
     | SaveFavoritedInstanceGroups (Set ( Concourse.TeamName, Concourse.PipelineName ))
     | LoadFavoritedInstanceGroups
+    | FetchMaintenanceBanner
 
 
 type alias VersionId =
@@ -735,6 +736,12 @@ runEffect effect key csrfToken =
 
         SyncStickyBuildLogHeaders ->
             syncStickyBuildLogHeaders ()
+
+        FetchMaintenanceBanner ->
+            Api.get Endpoints.MaintenanceBanner
+                |> Api.expectText
+                |> Api.request
+                |> Task.attempt MaintenanceBannerFetched
 
 
 pipelinesSectionName : PipelinesSection -> String

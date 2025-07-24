@@ -1,6 +1,7 @@
 module Api exposing
     ( Request
     , expectJson
+    , expectText
     , get
     , ignoreResponse
     , paginatedGet
@@ -11,6 +12,7 @@ module Api exposing
     )
 
 import Api.Endpoints exposing (Endpoint, toString)
+import Api.Expect as Expect
 import Api.Pagination exposing (parsePagination)
 import Concourse
 import Concourse.Pagination exposing (Page, Paginated)
@@ -36,7 +38,7 @@ request { endpoint, method, headers, body, expect, query } =
     Http.request
         { method = method
         , headers = headers
-        , url = endpoint |> toString query
+        , url = toString endpoint query
         , body = body
         , expect = expect
         , timeout = Nothing
@@ -97,6 +99,17 @@ expectJson decoder r =
     , query = r.query
     , body = r.body
     , expect = Http.expectJson decoder
+    }
+
+
+expectText : Request a -> Request String
+expectText r =
+    { method = r.method
+    , headers = r.headers
+    , endpoint = r.endpoint
+    , query = r.query
+    , body = r.body
+    , expect = Expect.text
     }
 
 

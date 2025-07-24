@@ -8,6 +8,7 @@ var (
 	EnablePipelineInstances              bool
 	EnableCacheStreamedVolumes           bool
 	EnableResourceCausality              bool
+	EnableMaintenanceBanner              bool
 )
 
 func FeatureFlags() map[string]bool {
@@ -21,5 +22,6 @@ func FeatureFlags() map[string]bool {
 		"pipeline_instances":     EnablePipelineInstances,
 		"cache_streamed_volumes": EnableCacheStreamedVolumes,
 		"resource_causality":     EnableResourceCausality,
+		"maintenance_banner":     EnableMaintenanceBanner,
 	}
 }

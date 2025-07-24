@@ -32,6 +32,7 @@ type Endpoint
     | UserInfo
     | Logout
     | InstanceGroup Concourse.InstanceGroupIdentifier InstanceGroupEndpoint
+    | MaintenanceBanner
 
 
 type PipelineEndpoint
@@ -122,11 +123,96 @@ resource id =
     pipeline id |> appendPath [ "resources", id.resourceName ]
 
 
-toString : List Url.Builder.QueryParameter -> Endpoint -> String
-toString query endpoint =
-    builder endpoint
-        |> appendQuery query
-        |> RouteBuilder.build
+toString : Endpoint -> List Url.Builder.QueryParameter -> String
+toString endpoint query =
+    let
+        rbToString : (List String, List Url.Builder.QueryParameter) -> String
+        rbToString (paths, params) =
+            let
+                pathStr = Url.Builder.absolute paths []
+                queryStr = Url.Builder.toQuery (params ++ query)
+            in
+            if queryStr == "" then
+                pathStr
+            else
+                pathStr ++ queryStr
+        path =
+            case endpoint of
+                PipelinesList ->
+                    "/api/v1/pipelines"
+
+                Pipeline id subEndpoint ->
+                    rbToString (pipeline id |> append (pipelineEndpoint subEndpoint))
+
+                JobsList ->
+                    "/api/v1/jobs"
+
+                Job id subEndpoint ->
+                    rbToString (
+                        pipeline id
+                            |> appendPath [ "jobs", id.jobName ]
+                            |> append (jobEndpoint subEndpoint)
+                    )
+
+                JobBuild id ->
+                    rbToString (
+                        pipeline id |> appendPath [ "jobs", id.jobName, "builds", id.buildName ]
+                    )
+
+                Build id subEndpoint ->
+                    rbToString (
+                        base
+                            |> appendPath [ "builds", String.fromInt id ]
+                            |> append (buildEndpoint subEndpoint)
+                    )
+
+                ResourcesList ->
+                    "/api/v1/resources"
+
+                Resource id subEndpoint ->
+                    rbToString (resource id |> append (resourceEndpoint subEndpoint))
+
+                ResourceVersion id subEndpoint ->
+                    rbToString (
+                        resource id
+                            |> appendPath [ "versions", String.fromInt id.versionID ]
+                            |> append (resourceVersionEndpoint subEndpoint)
+                    )
+
+                TeamsList ->
+                    "/api/v1/teams"
+
+                Team teamName subEndpoint ->
+                    rbToString (
+                        base
+                            |> appendPath [ "teams", teamName ]
+                            |> append (teamEndpoint subEndpoint)
+                    )
+
+                ClusterInfo ->
+                    "/api/v1/info"
+
+                Cli ->
+                    "/api/v1/cli"
+
+                UserInfo ->
+                    "/api/v1/user"
+
+                Logout ->
+                    rbToString (baseSky |> appendPath [ "logout" ])
+
+                InstanceGroup { teamName, name } subEndpoint ->
+                    rbToString (
+                        base
+                            |> appendPath [ "teams", teamName ]
+                            |> appendPath [ "pipelines", name ]
+                            |> append (instanceGroupEndpoint subEndpoint)
+                    )
+
+                MaintenanceBanner ->
+                    "/api/v1/maintenance-banner"
+    in
+    path ++ (if List.isEmpty query then "" else Url.Builder.toQuery query)
 
 
 builder : Endpoint -> RouteBuilder
@@ -190,6 +276,9 @@ builder endpoint =
                 |> appendPath [ "teams", teamName ]
                 |> appendPath [ "pipelines", name ]
                 |> append (instanceGroupEndpoint subEndpoint)
+
+        MaintenanceBanner ->
+            base |> appendPath [ "maintenance-banner" ]
 
 
 pipelineEndpoint : PipelineEndpoint -> RouteBuilder

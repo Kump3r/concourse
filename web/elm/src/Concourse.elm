@@ -910,6 +910,7 @@ type alias FeatureFlags =
     , pipeline_instances : Bool
     , cache_streamed_volumes : Bool
     , resource_causality : Bool
+    , maintenance_banner : Bool
     }
 
 
@@ -922,12 +923,14 @@ defaultFeatureFlags =
     , pipeline_instances = False
     , cache_streamed_volumes = False
     , resource_causality = False
+    , maintenance_banner = False
     }
 
 
 type alias ClusterInfo =
     { version : String
     , clusterName : String
+    , maintenanceBannerEnabled : Bool
     }
 
 
@@ -936,6 +939,7 @@ decodeInfo =
     Json.Decode.succeed ClusterInfo
         |> andMap (Json.Decode.field "version" Json.Decode.string)
         |> andMap (defaultTo "" <| Json.Decode.field "cluster_name" Json.Decode.string)
+        |> andMap (Json.Decode.field "maintenance_banner_enabled" Json.Decode.bool)
 
 
 

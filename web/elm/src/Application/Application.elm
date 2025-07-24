@@ -39,6 +39,7 @@ import Time
 import Tooltip
 import Url
 import UserState exposing (UserState(..))
+import Api.Expect
 
 
 type alias Flags =
@@ -54,6 +55,7 @@ type alias Flags =
 type alias Model =
     { subModel : SubPage.Model
     , session : Session
+    , maintenanceBanner : String
     }
 
 
@@ -101,6 +103,7 @@ init flags url =
         model =
             { subModel = subModel
             , session = session
+            , maintenanceBanner = ""
             }
 
         handleTokenEffect =
@@ -121,6 +124,7 @@ init flags url =
       , LoadFavoritedPipelines
       , LoadFavoritedInstanceGroups
       , FetchClusterInfo
+      , Effects.FetchMaintenanceBanner
       ]
         ++ handleTokenEffect
         ++ subEffects
@@ -140,6 +144,12 @@ locationMsg url =
 handleCallback : Callback -> Model -> ( Model, List Effect )
 handleCallback callback model =
     case callback of
+        MaintenanceBannerFetched (Ok bannerText) ->
+            ( { model | maintenanceBanner = bannerText }, [] )
+
+        MaintenanceBannerFetched (Err _) ->
+            ( { model | maintenanceBanner = "" }, [] )
+
         BuildTriggered (Err err) ->
             redirectToLoginIfNecessary err ( model, [] )
 
@@ -444,26 +454,54 @@ view model =
     let
         ( title, body ) =
             SubPage.view model.session model.subModel
+
+        banner =
+            if model.session.featureFlags.maintenance_banner && model.maintenanceBanner /= "" then
+                Html.div
+                    [ Html.Attributes.style "position" "fixed"
+                    , Html.Attributes.style "top" "0"
+                    , Html.Attributes.style "left" "0"
+                    , Html.Attributes.style "width" "100%"
+                    , Html.Attributes.style "background" "#fffbe6"
+                    , Html.Attributes.style "color" "#856404"
+                    , Html.Attributes.style "padding" "12px 0"
+                    , Html.Attributes.style "text-align" "center"
+                    , Html.Attributes.style "font-weight" "bold"
+                    , Html.Attributes.style "z-index" "1000"
+                    , Html.Attributes.style "border-bottom" "1px solid #ffeeba"
+                    ]
+                    [ Html.text model.maintenanceBanner ]
+            else
+                Html.text ""
     in
     { title = title ++ " - Concourse"
     , body =
+        let
+            pageWrapperStyles =
+                (id "page-wrapper"
+                    :: style "height" "100%"
+                    :: (if model.session.draggingSideBar then
+                            Styles.disableInteraction
+                        else
+                            []
+                       )
+                    ++ (if model.session.featureFlags.maintenance_banner && model.maintenanceBanner /= "" then
+                            [ style "margin-top" "48px" ]
+                        else
+                            []
+                       )
+                )
+        in
         List.map (Html.map Update)
-            [ SubPage.tooltip model.subModel model.session
+            [ banner
+            , SubPage.tooltip model.subModel model.session
                 |> Maybe.map (Tooltip.view model.session)
                 |> Maybe.withDefault (Html.text "")
             , SideBar.tooltip model.session
                 |> Maybe.map (Tooltip.view model.session)
                 |> Maybe.withDefault (Html.text "")
             , Html.div
-                (id "page-wrapper"
-                    :: style "height" "100%"
-                    :: (if model.session.draggingSideBar then
-                            Styles.disableInteraction
-
-                        else
-                            []
-                       )
-                )
+                pageWrapperStyles
                 [ body ]
             ]
     }
@@ -510,3 +548,22 @@ routeMatchesModel route model =
 
         _ ->
             False
+
+
+effectToCmd : Effect -> Cmd Msgs.TopLevelMessage
+effectToCmd effect =
+    case effect of
+        Effects.FetchMaintenanceBanner ->
+            Http.send (Msgs.Callback << Message.Callback.MaintenanceBannerFetched)
+                (Http.request
+                    { method = "GET"
+                    , headers = []
+                    , url = "/api/v1/maintenance-banner"
+                    , body = Http.emptyBody
+                    , expect = Api.Expect.text
+                    , timeout = Nothing
+                    , withCredentials = False
+                    }
+                )
+        _ ->
+            Cmd.none

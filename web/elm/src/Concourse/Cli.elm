@@ -29,11 +29,10 @@ downloadUrl cli =
                 Linux ->
                     "linux"
     in
-    Endpoints.Cli
-        |> Endpoints.toString
-            [ Url.Builder.string "arch" "amd64"
-            , Url.Builder.string "platform" platformName
-            ]
+    Endpoints.toString Endpoints.Cli
+        [ Url.Builder.string "arch" "amd64"
+        , Url.Builder.string "platform" platformName
+        ]
 
 
 label : Cli -> String

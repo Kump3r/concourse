@@ -168,6 +168,8 @@ func (a *auditor) ValidateAction(action string) bool {
 		atc.ListDestroyingVolumes,
 		atc.ReportWorkerVolumes:
 		return a.EnableVolumeAuditLog
+	case atc.GetMaintenanceBanner:
+		return false // No audit for public maintenance banner endpoint
 	default:
 		panic(fmt.Sprintf("unhandled action: %s", action))
 	}

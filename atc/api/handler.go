@@ -83,6 +83,7 @@ func NewHandler(
 	dbWall db.Wall,
 	clock clock.Clock,
 	dbSigningKeyFactory db.SigningKeyFactory,
+	maintenanceBannerText string,
 ) (http.Handler, error) {
 
 	absCLIDownloadsDir, err := filepath.Abs(cliDownloadsDir)
@@ -108,7 +109,7 @@ func NewHandler(
 	containerServer := containerserver.NewServer(logger, workerPool, interceptTimeoutFactory, interceptUpdateInterval, containerRepository, destroyer, clock)
 	volumesServer := volumeserver.NewServer(logger, volumeRepository, destroyer)
 	teamServer := teamserver.NewServer(logger, dbTeamFactory, externalURL)
-	infoServer := infoserver.NewServer(logger, version, workerVersion, externalURL, clusterName, credsManagers)
+	infoServer := infoserver.NewServer(logger, version, workerVersion, externalURL, clusterName, credsManagers, maintenanceBannerText)
 	artifactServer := artifactserver.NewServer(logger, workerPool)
 	usersServer := usersserver.NewServer(logger, dbUserFactory)
 	wallServer := wallserver.NewServer(dbWall, logger)
@@ -237,6 +238,8 @@ func NewHandler(
 
 		atc.GetOpenIDConfiguration: http.HandlerFunc(idTokenServer.OpenIDConfiguration),
 		atc.GetSigningKeys:         http.HandlerFunc(idTokenServer.SigningKeys),
+
+		atc.GetMaintenanceBanner: http.HandlerFunc(infoServer.Banner),
 	}
 
 	return rata.NewRouter(atc.Routes, wrapper.Wrap(handlers))

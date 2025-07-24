@@ -263,7 +263,10 @@ type RunCommand struct {
 		EnableP2PVolumeStreaming             bool `long:"enable-p2p-volume-streaming" description:"Enable P2P volume streaming. NOTE: All workers must be on the same LAN network"`
 		EnableCacheStreamedVolumes           bool `long:"enable-cache-streamed-volumes" description:"When enabled, streamed resource volumes will be cached on the destination worker."`
 		EnableResourceCausality              bool `long:"enable-resource-causality" description:"Enable the resource causality page. Computing causality can be expensive for the database. "`
+		EnableMaintenanceBanner              bool `long:"enable-maintenance-banner" description:"Enable the maintenance banner on the dashboard. This is useful for scheduled maintenance or downtime."`
 	} `group:"Feature Flags"`
+
+	MaintenanceBannerText string `long:"maintenance-banner-text" description:"Text to display in the maintenance banner if enabled."`
 
 	BaseResourceTypeDefaults flag.File `long:"base-resource-type-defaults" description:"Base resource type defaults"`
 
@@ -550,6 +553,7 @@ func (cmd *RunCommand) Runner(positionalArguments []string) (ifrit.Runner, error
 	atc.EnablePipelineInstances = cmd.FeatureFlags.EnablePipelineInstances
 	atc.EnableCacheStreamedVolumes = cmd.FeatureFlags.EnableCacheStreamedVolumes
 	atc.EnableResourceCausality = cmd.FeatureFlags.EnableResourceCausality
+	atc.EnableMaintenanceBanner = cmd.FeatureFlags.EnableMaintenanceBanner
 	atc.DefaultCheckInterval = cmd.ResourceCheckingInterval
 	atc.DefaultWebhookInterval = cmd.ResourceWithWebhookCheckingInterval
 	atc.DefaultResourceTypeInterval = cmd.ResourceTypeCheckingInterval
@@ -2090,6 +2094,7 @@ func (cmd *RunCommand) constructAPIHandler(
 		dbWall,
 		clock.NewClock(),
 		dbSigningKeyFactory,
+		cmd.MaintenanceBannerText,
 	)
 }
 

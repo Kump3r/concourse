@@ -53,7 +53,8 @@ services:
       CONCOURSE_ENABLE_ACROSS_STEP: "true"
       CONCOURSE_ENABLE_CACHE_STREAMED_VOLUMES: "true"
       CONCOURSE_ENABLE_RESOURCE_CAUSALITY: "true"
-
+      CONCOURSE_ENABLE_MAINTENANCE_BANNER: "true"
+      CONCOURSE_MAINTENANCE_BANNER_TEXT: "Scheduled maintenance in progress"
   worker:
     build: .
     image: concourse/concourse:local
