@@ -1,0 +1,78 @@
+services:
+  db1:
+    image: postgres:16
+    shm_size: 1gb
+    environment:
+      POSTGRES_DB: concourse
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d concourse"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
+  db2:
+    image: postgres:16
+    shm_size: 1gb
+    environment:
+      POSTGRES_DB: concourse
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+
+  proxy:
+    image: haproxy:2.9
+    volumes:
+      - ./hack/haproxy:/usr/local/etc/haproxy
+    ports:
+      - "5432:5432"
+    depends_on:
+      db1:
+        condition: service_healthy
+
+  web:
+    image: concourse/concourse:local
+    build: .
+    command: web
+    depends_on:
+      proxy:
+        condition: service_started
+    ports: [8080:8080]
+    volumes:
+      - .:/src
+      - "./hack/keys:/concourse-keys"
+    environment:
+      CONCOURSE_SESSION_SIGNING_KEY: /concourse-keys/session_signing_key
+      CONCOURSE_TSA_AUTHORIZED_KEYS: /concourse-keys/authorized_worker_keys
+      CONCOURSE_TSA_HOST_KEY: /concourse-keys/tsa_host_key
+      CONCOURSE_LOG_LEVEL: debug
+      CONCOURSE_POSTGRES_HOST: proxy
+      CONCOURSE_POSTGRES_PORT: "5432"
+      CONCOURSE_POSTGRES_USER: dev
+      CONCOURSE_POSTGRES_PASSWORD: dev
+      CONCOURSE_POSTGRES_DATABASE: concourse
+      CONCOURSE_EXTERNAL_URL: http://localhost:8080
+      CONCOURSE_ADD_LOCAL_USER: test:test
+      CONCOURSE_MAIN_TEAM_LOCAL_USER: test
+      CONCOURSE_CLUSTER_NAME: dev
+
+  worker:
+    image: concourse/concourse:local
+    build: .
+    command: worker
+    privileged: true
+    cgroup: host
+    depends_on: [web]
+    volumes: ["./hack/keys:/concourse-keys"]
+    stop_signal: SIGUSR2
+    environment:
+      CONCOURSE_RUNTIME: containerd
+      CONCOURSE_TSA_PUBLIC_KEY: /concourse-keys/tsa_host_key.pub
+      CONCOURSE_TSA_WORKER_PRIVATE_KEY: /concourse-keys/worker_key
+      CONCOURSE_LOG_LEVEL: debug
+      CONCOURSE_TSA_HOST: web:2222
+      CONCOURSE_BIND_IP: 0.0.0.0
+      CONCOURSE_BAGGAGECLAIM_BIND_IP: 0.0.0.0
+      CONCOURSE_BAGGAGECLAIM_DRIVER: overlay
+      CONCOURSE_CONTAINERD_DNS_PROXY_ENABLE: "true"
+

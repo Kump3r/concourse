@@ -1,0 +1,19 @@
+resources:
+  - name: tick
+    type: time
+    source: { interval: 10s }
+
+jobs:
+  - name: write-load
+    plan:
+      - get: tick
+        trigger: true
+      - task: noop
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source: { repository: busybox }
+          run:
+            path: echo
+            args: ["ok"]
